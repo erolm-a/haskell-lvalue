@@ -30,10 +30,10 @@ main = do
     runExpression y >>= \val -> putStrLn "Now y contains" ++ show val
 
     -- (x + y) =: new 42 -- Error: rvalues are not assignable
-    z <- constant 42
+    let z = constant 42
     x += z
     y += z
-    -- z + z -- Error: constants are rvalues, thus not assignable
+    -- z += z -- Error: constants are rvalues, thus not assignable
     runExpression y >>= \val -> putStrLn "Now y contains" ++ show val
 ```
 

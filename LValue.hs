@@ -1,7 +1,7 @@
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
-module Control.LValue where
+module LValue where
 
 import           Data.IORef                     ( IORef
                                                 , newIORef
@@ -69,6 +69,7 @@ constant value = Expr $ return value
 -- |Sum two expressions into one expression. The result is a rvalue.
 -- |If you need to combine a sum (+) and an assignment (=:) use (+=)
 infixl 6 +
+(+) :: P.Num a => Expr' v a -> Expr' RValue a -> Expr' RValue a
 e1 + e2 = Expr $ (P.+) <$> runExpression e1 <*> runExpression e2
 
 -- |Sum an expression to a simple value. This is useful when a user
@@ -98,13 +99,13 @@ abs e = Expr $ (P.abs) <$> runExpression e
 signum e = Expr $ (P.signum) <$> runExpression e
 
 infix 3 &&
-(&&) :: Expr' v Bool -> Expr' v Bool -> Expr' RValue Bool
+(&&) :: Expr' v1 Bool -> Expr' v2 Bool -> Expr' RValue Bool
 expr1 && expr2 = Expr $ (P.&&) <$> runExpression expr1 <*> runExpression expr2
 
 and = (&&)
 
 infix 2 ||
-(||) :: Expr' v Bool -> Expr' v Bool -> Expr' RValue Bool
+(||) :: Expr' v1 Bool -> Expr' v2 Bool -> Expr' RValue Bool
 expr1 || expr2 = Expr $ (P.||) <$> runExpression expr1 <*> runExpression expr2
 
 or = (||)
@@ -113,28 +114,28 @@ not :: Expr' v Bool -> Expr' RValue Bool
 not expr = Expr $ (P.not) <$> runExpression expr
 
 infix 4 >
-(>) :: P.Ord a => Expr' v a -> Expr' v a -> Expr' RValue Bool
+(>) :: P.Ord a => Expr' v1 a -> Expr' v2 a -> Expr' RValue Bool
 expr1 > expr2 = Expr $ (P.>) <$> runExpression expr1 <*> runExpression expr2
 
 infix 4 >.
 expr1 >. value = expr1 > (constant value)
 
 infix 4 >=
-(>=) :: P.Ord a => Expr' v a -> Expr' v a -> Expr' RValue Bool
+(>=) :: P.Ord a => Expr' v1 a -> Expr' v2 a -> Expr' RValue Bool
 expr1 >= expr2 = Expr $ (P.>=) <$> runExpression expr1 <*> runExpression expr2
 
 infix 4 >=.
 expr1 >=. value = expr1 >= (constant value)
 
 infix 4 <
-(<) :: P.Ord a => Expr' v a -> Expr' v a -> Expr' RValue Bool
+(<) :: P.Ord a => Expr' v1 a -> Expr' v2 a -> Expr' RValue Bool
 expr1 < expr2 = not $ expr1 >= expr2
 
 infix 4 <.
 expr1 <. value = expr1 < (constant value)
 
 infix 4 <=
-(<=) :: P.Ord a => Expr' v a -> Expr' v a -> Expr' RValue Bool
+(<=) :: P.Ord a => Expr' v1 a -> Expr' v2 a -> Expr' RValue Bool
 expr1 <= expr2 = not $ expr1 > expr2
 
 infix 4 <=.
@@ -172,7 +173,7 @@ var1@(Var getter1 setter1) `swap` var2@(Var getter2 setter2) = do
 -- |`takeArray`
 -- |For example:
 -- | do { myarr <- arr[10]; arr[0] =: new 1; arr[1] =: arr[0] +. 2; }
-arr :: [Expr' v P.Int] -> IO ([Expr' v P.Int] -> Expr' v a)
+arr :: [Expr' v1 P.Int] -> IO ([Expr' v2 P.Int] -> Expr' v3 a)
 arr index = do
   let extractIdx [idx] = runExpression idx
   index' <- extractIdx index
