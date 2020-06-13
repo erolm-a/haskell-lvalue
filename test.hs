@@ -7,7 +7,7 @@ import Prelude as P
 main = do
     x <- new 3
     y <- copy x
-    y =: x * y
+    y =: x LV.* y
     runExpression y P.>>= \val -> putStrLn P.$ "Now y contains " ++ show val
 
     -- (x + y) =: new 42 -- Error: rvalues are not assignable

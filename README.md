@@ -10,9 +10,9 @@ This library attempts to implement with the means of [General Algebraic Data Typ
 
 ## Usage
 
-To make it C-like, the module exports lvalues and rvalues on basic data types (basically wrapping IORefs) and a nice C-like syntax for 1-D arrays.
+To make it C-like, the module exports lvalues and rvalues on basic data types (basically wrapping `IORef`s) and a nice C-like syntax for 1-D arrays.
 
-Some operators have been defined, but they are meant to be used like the C ones (e.g. `>, >=, ||, &&` etc.) and thus can clash the prelude. Please import them qualified.
+Some operators have been defined but are meant to be used like the C ones (e.g. `>, >=, ||, &&` etc.) and thus can clash with the prelude. Please import them qualified, or hide some Prelude functions.
 
 That said, let's look at how to use it:
 
@@ -21,7 +21,7 @@ That said, let's look at how to use it:
 ```haskell
 {-# LANGUAGE NoImplicitPrelude#-}
 
-import Control.LValue
+import LValue
 
 main = do
     x <- new 3
@@ -65,4 +65,4 @@ How do `new`, `copy` and `constant` differ? Simple:
 
 ## Notes
 
-<a name="note1">¹</a>: At the right stage, *some* operations rely on runtime check, for example array indexing requires the lists to only have one element.
+<a name="note1">¹</a>: At this stage, *some* operations rely on runtime checks, for example array indexing requires the lists to only have one element.

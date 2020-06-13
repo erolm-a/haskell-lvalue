@@ -37,9 +37,10 @@ type Setter a = a -> IO ()
 data Expr' v a where
     -- An Expr can only yield values, thus it's a RValue
     Expr ::Getter a -> Expr' RValue a
-    Var ::Getter a -> Setter a -> Expr' v a
+    -- A Var denotes a new variable with a getter and a setter
+    Var :: Getter a -> Setter a -> Expr' v a
 
--- Execute an expression.
+-- Extract a getter from an Expression.
 runExpression :: Expr' v a -> IO a
 runExpression (Expr t ) = t
 runExpression (Var t _) = t
@@ -47,8 +48,7 @@ runExpression (Var t _) = t
 lvalueFromExpr :: Expr' v a -> IO (Expr' v a)
 lvalueFromExpr expr = do
   value <- runExpression expr
-  ref   <- newIORef value
-  return (Var (readIORef ref) (writeIORef ref))
+  lvalueFromNaked value
 
 lvalueFromNaked :: a -> IO (Expr' v a)
 lvalueFromNaked value = do
@@ -169,21 +169,25 @@ var1@(Var getter1 setter1) `swap` var2@(Var getter2 setter2) = do
 -- |Create a 1-D array. An array is neither a lvalue nor a rvalue,
 -- |But a "lvalue-generator".
 -- |The basic idea is that after indexing an array we *get* a lvalue,
--- |But arrays here are not first class citizens. To extract one, use
--- |`takeArray`
+-- |But arrays here are not first class citizens.
 -- |For example:
 -- | do { myarr <- arr[10]; arr[0] =: new 1; arr[1] =: arr[0] +. 2; }
 arr :: [Expr' v1 P.Int] -> IO ([Expr' v2 P.Int] -> Expr' v3 a)
-arr index = do
-  let extractIdx [idx] = runExpression idx
-  index' <- extractIdx index
+arr [index] = do
+  index' <- runExpression index
   array  <- newArray (0, index' P.- 1) P.undefined :: IO (IOArray P.Int a)
+  liftArray array
+
+-- |Convert a stateful array into a "lvalue-generator".
+-- |The basic idea is that after indexing an array we *get* a lvalue,
+-- |But arrays here are not first class citizens.
+liftArray :: IOArray P.Int a -> IO ([Expr' v1 P.Int] -> Expr' v2 a)
+liftArray array =
+  let extractIdx [idx] = runExpression idx in 
   return
-    (\newIndex -> Var
-      (extractIdx newIndex >>= readArray array)
-      (\value ->
-        extractIdx newIndex >>= \index'' -> writeArray array index'' value
+      (\newIndex -> Var
+        (extractIdx newIndex >>= readArray array)
+        (\value ->
+          extractIdx newIndex >>= \index'' -> writeArray array index'' value
+        )
       )
-    )
-
-
